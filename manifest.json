@@ -1,7 +1,7 @@
 {
   "name": "FatherStress",
   "short_name": "FatherStress",
-  "start_url": "/index.html",
+  "start_url": "/fatherStress/index.html",
   "display": "standalone",
   "background_color": "#0b0f17",
   "theme_color": "#111827",
