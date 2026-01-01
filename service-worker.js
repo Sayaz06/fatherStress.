@@ -1,17 +1,16 @@
-/* Simple cache-first SW for static assets */
-const CACHE_NAME = 'fatherstress-v28';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'wanlaw-shell-v1';
+const ASSETS = [
   './',
   './index.html',
+  './app.js',
   './manifest.webmanifest',
-  './firebase-config.js',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-152.png'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -19,9 +18,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve()))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
@@ -29,30 +26,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  const url = new URL(req.url);
-
-  // Only cache same-origin GET requests
-  if (req.method !== 'GET' || url.origin !== location.origin) {
-    return;
-  }
-
-  // Cache-first for static assets
+  if (req.method !== 'GET') return;
   event.respondWith(
     caches.match(req).then(cached => {
-      if (cached) return cached;
-      return fetch(req).then(res => {
+      const fetchPromise = fetch(req).then(res => {
+        // Cache new version of same asset (opaque allowed for icons)
         const copy = res.clone();
-        // Cache successful responses
-        if (res.ok) {
-          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-        }
+        caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
         return res;
-      }).catch(() => {
-        // Offline fallback for root
-        if (req.destination === 'document') {
-          return caches.match('./index.html');
-        }
-      });
+      }).catch(() => cached);
+      return cached || fetchPromise;
     })
   );
 });
