@@ -1,20 +1,24 @@
 {
   "name": "FatherStress",
   "short_name": "FatherStress",
-  "start_url": "/fatherStress/index.html",
+  "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0b0f17",
+  "background_color": "#0f172a",
   "theme_color": "#111827",
+  "description": "PWA untuk tajuk, folder, dan nota dengan autosave Firestore.",
   "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
