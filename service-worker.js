@@ -1,35 +1,58 @@
-const CACHE_NAME = "fatherstress-cache-v9";
-const ASSETS = [
-  "/fatherStress/",
-  "/fatherStress/index.html",
-  "/fatherStress/manifest.json",
-  "/fatherStress/firebase-config.js"
+/* Simple cache-first SW for static assets */
+const CACHE_NAME = 'fatherstress-v1';
+const STATIC_ASSETS = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './firebase-config.js',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
 ];
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
+  self.skipWaiting();
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.map(k => (k !== CACHE_NAME ? caches.delete(k) : Promise.resolve()))
+      )
     )
   );
+  self.clients.claim();
 });
 
-self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const network = fetch(e.request).then((res) => {
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // Only cache same-origin GET requests
+  if (req.method !== 'GET' || url.origin !== location.origin) {
+    return;
+  }
+
+  // Cache-first for static assets
+  event.respondWith(
+    caches.match(req).then(cached => {
+      if (cached) return cached;
+      return fetch(req).then(res => {
         const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
+        // Cache successful responses
+        if (res.ok) {
+          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+        }
         return res;
+      }).catch(() => {
+        // Offline fallback for root
+        if (req.destination === 'document') {
+          return caches.match('./index.html');
+        }
       });
-      return cached || network;
     })
   );
 });
