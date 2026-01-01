@@ -1,4 +1,6 @@
-// Config from Ad
+// ==================== PART 1: FIREBASE SETUP & AUTH ====================
+
+// Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyCtxOE42D07yFc9eK3nLMsOy50SmeSErwI",
   authDomain: "fatherstress-9e695.firebaseapp.com",
@@ -9,15 +11,15 @@ const firebaseConfig = {
   measurementId: "G-GF6HCJZ5MD"
 };
 
-// Initialize Firebase
+// Initialize Firebase sekali sahaja
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Enable offline persistence for Firestore
+// Enable offline persistence untuk Firestore
 db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
-// Ensure session persists across refresh
+// Pastikan sesi login kekal selepas refresh
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 // DOM refs
@@ -63,17 +65,17 @@ function show(id) {
   id.classList.remove('hidden');
 }
 
-// Auth
+// Login dengan Google
 btnGoogle.addEventListener('click', async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   try {
     await auth.signInWithPopup(provider);
-    // Session persists; nothing else needed here
   } catch (e) {
     alert('Log masuk gagal: ' + e.message);
   }
 });
 
+// Logout
 btnLogout.addEventListener('click', async () => {
   try {
     await auth.signOut();
@@ -82,7 +84,7 @@ btnLogout.addEventListener('click', async () => {
   }
 });
 
-// Auth state
+// Restore sesi bila refresh
 auth.onAuthStateChanged(async (user) => {
   state.user = user;
   if (!user) {
@@ -92,6 +94,8 @@ auth.onAuthStateChanged(async (user) => {
   show(vHome);
   loadFiles();
 });
+
+// ==================== PART 2: FILES & FOLDERS ====================
 
 // Collections paths
 function filesCol() {
@@ -154,7 +158,6 @@ async function updateFileTitle(id, title) {
 async function deleteFile(id) {
   const ok = confirm('Padam fail ini? Semua folder & nota di dalamnya akan dipadam.');
   if (!ok) return;
-  // Delete subcollections (simple approach: fetch and delete)
   const folderSnap = await foldersCol(id).get();
   for (const f of folderSnap.docs) {
     const notesSnap = await foldersCol(id).doc(f.id).collection('notes').get();
@@ -169,7 +172,7 @@ async function deleteFile(id) {
 
 btnAddFile.addEventListener('click', async () => {
   const title = prompt('Nama Fail?') || 'Fail Baharu';
-  const ref = await filesCol().add({
+  await filesCol().add({
     title,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
@@ -194,13 +197,11 @@ async function loadFolders() {
 
 function renderFolders() {
   const q = (searchFolders.value || '').toLowerCase();
-  // Loose search: only requires 1–2 matching chars
   foldersList.innerHTML = '';
   state.folders
     .filter(f => {
       if (!q) return true;
       const name = (f.title || '').toLowerCase();
-      // Check if any char from q exists in name
       return q.split('').some(ch => name.includes(ch));
     })
     .forEach(f => {
@@ -262,6 +263,8 @@ async function deleteFolder(id) {
   await loadFolders();
 }
 
+// ==================== PART 3: NOTES & EDITOR ====================
+
 // Open Folder → Note view
 async function openFolder(folderId, folderTitle) {
   state.currentFolderId = folderId;
@@ -313,7 +316,6 @@ colorPicker.addEventListener('input', () => {
 });
 
 fontSizeInput.addEventListener('change', () => {
-  // Convert pt to relative equivalent; execCommand uses 1–7, so we inline style instead
   const sizePt = Math.max(1, Math.min(60, Number(fontSizeInput.value) || 14));
   document.execCommand('fontSize', false, 7); // apply largest, then replace with pt
   const els = editor.querySelectorAll('font[size="7"]');
@@ -352,7 +354,6 @@ async function saveNote() {
 // Navigation
 btnBackHome.addEventListener('click', () => {
   show(vHome);
-  // Clean subscription when leaving note
   if (state.noteUnsubscribe) { state.noteUnsubscribe(); state.noteUnsubscribe = null; }
   state.currentFolderId = null;
   state.currentNoteId = null;
@@ -363,9 +364,4 @@ btnBackFolders.addEventListener('click', () => {
   if (state.noteUnsubscribe) { state.noteUnsubscribe(); state.noteUnsubscribe = null; }
 });
 
-// PWA install prompt (optional hook)
-window.addEventListener('beforeinstallprompt', (e) => {
-  // You can store e and show a custom "Install" button if desired
-  e.preventDefault();
-  window.deferredPrompt = e;
-});
+
