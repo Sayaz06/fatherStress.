@@ -290,6 +290,7 @@ async function openFolder(folderId, folderTitle) {
   state.noteUnsubscribe = notesRef.doc(state.currentNoteId).onSnapshot(doc => {
     const data = doc.data();
     if (data && typeof data.content === 'string') {
+      // Avoid cursor jump: only update if different
       if (editor.innerHTML !== data.content) {
         editor.innerHTML = data.content;
       }
@@ -303,50 +304,25 @@ async function openFolder(folderId, folderTitle) {
 document.querySelectorAll('.toolbar .btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const action = btn.dataset.action;
-    document.execCommand('styleWithCSS', false, true);
     if (action === 'bold') document.execCommand('bold');
     if (action === 'underline') document.execCommand('underline');
     editor.focus();
   });
 });
 
-// Helper: apply inline style to current selection
-function applyInlineStyleToSelection(styleObj) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const range = sel.getRangeAt(0);
-
-  if (range.collapsed) {
-    const span = document.createElement('span');
-    Object.assign(span.style, styleObj);
-    span.appendChild(document.createTextNode('\u200B'));
-    range.insertNode(span);
-    const newRange = document.createRange();
-    newRange.setStart(span.firstChild, 1);
-    newRange.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(newRange);
-    return;
-  }
-
-  const span = document.createElement('span');
-  Object.assign(span.style, styleObj);
-  span.appendChild(range.extractContents());
-  range.insertNode(span);
-  sel.removeAllRanges();
-  const newRange = document.createRange();
-  newRange.selectNodeContents(span);
-  sel.addRange(newRange);
-}
-
 colorPicker.addEventListener('input', () => {
-  applyInlineStyleToSelection({ color: colorPicker.value });
+  document.execCommand('foreColor', false, colorPicker.value);
   editor.focus();
 });
 
 fontSizeInput.addEventListener('change', () => {
   const sizePt = Math.max(1, Math.min(60, Number(fontSizeInput.value) || 14));
-  applyInlineStyleToSelection({ fontSize: `${sizePt}pt` });
+  document.execCommand('fontSize', false, 7); // apply largest, then replace with pt
+  const els = editor.querySelectorAll('font[size="7"]');
+  els.forEach(el => {
+    el.removeAttribute('size');
+    el.style.fontSize = `${sizePt}pt`;
+  });
   editor.focus();
 });
 
@@ -388,93 +364,3 @@ btnBackFolders.addEventListener('click', () => {
   if (state.noteUnsubscribe) { state.noteUnsubscribe(); state.noteUnsubscribe = null; }
 });
 
-// ==================== PART 4: NOTES TOOLBAR, SAVE & NAVIGATION ====================
-
-// Toolbar actions
-document.querySelectorAll('.toolbar .btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const action = btn.dataset.action;
-    document.execCommand('styleWithCSS', false, true);
-    if (action === 'bold') document.execCommand('bold');
-    if (action === 'underline') document.execCommand('underline');
-    editor.focus();
-  });
-});
-
-// Helper: apply inline style to current selection
-function applyInlineStyleToSelection(styleObj) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const range = sel.getRangeAt(0);
-
-  if (range.collapsed) {
-    const span = document.createElement('span');
-    Object.assign(span.style, styleObj);
-    span.appendChild(document.createTextNode('\u200B'));
-    range.insertNode(span);
-    const newRange = document.createRange();
-    newRange.setStart(span.firstChild, 1);
-    newRange.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(newRange);
-    return;
-  }
-
-  const span = document.createElement('span');
-  Object.assign(span.style, styleObj);
-  span.appendChild(range.extractContents());
-  range.insertNode(span);
-  sel.removeAllRanges();
-  const newRange = document.createRange();
-  newRange.selectNodeContents(span);
-  sel.addRange(newRange);
-}
-
-colorPicker.addEventListener('input', () => {
-  applyInlineStyleToSelection({ color: colorPicker.value });
-  editor.focus();
-});
-
-fontSizeInput.addEventListener('change', () => {
-  const sizePt = Math.max(1, Math.min(60, Number(fontSizeInput.value) || 14));
-  applyInlineStyleToSelection({ fontSize: `${sizePt}pt` });
-  editor.focus();
-});
-
-// Auto-save (debounced)
-let saveTimer = null;
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNote, 500);
-}
-editor.addEventListener('input', scheduleSave);
-editor.addEventListener('keyup', scheduleSave);
-editor.addEventListener('paste', scheduleSave);
-
-async function saveNote() {
-  if (!state.currentNoteId) return;
-  try {
-    saveStatus.textContent = 'Menyimpan…';
-    await notesCol(state.currentFileId, state.currentFolderId).doc(state.currentNoteId)
-      .set({
-        content: editor.innerHTML,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-    saveStatus.textContent = 'Auto-simpan diaktifkan.';
-  } catch (e) {
-    saveStatus.textContent = 'Simpan gagal (offline). Akan cuba semula.';
-  }
-}
-
-// Navigation
-btnBackHome.addEventListener('click', () => {
-  show(vHome);
-  if (state.noteUnsubscribe) { state.noteUnsubscribe(); state.noteUnsubscribe = null; }
-  state.currentFolderId = null;
-  state.currentNoteId = null;
-  loadFiles();
-});
-btnBackFolders.addEventListener('click', () => {
-  show(vFolders);
-  if (state.noteUnsubscribe) { state.noteUnsubscribe(); state.noteUnsubscribe = null; }
-});
