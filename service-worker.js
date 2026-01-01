@@ -1,5 +1,5 @@
 /* Simple cache-first SW for static assets */
-const CACHE_NAME = 'fatherstress-v23';
+const CACHE_NAME = 'fatherstress-v24';
 const STATIC_ASSETS = [
   './',
   './index.html',
