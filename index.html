@@ -17,14 +17,14 @@
     .card-title { font-weight:700; font-size:18px; }
     .card-subtitle { font-size:12px; color:var(--muted); }
     .divider { height:1px; background:var(--border); margin:12px 0; }
-    .btn { border:1px solid var(--border); background:transparent; color:var(--text); padding:8px 12px; border-radius:8px; cursor:pointer; }
+    .btn { border:1px solid var(--border); background:#1e293b; color:var(--text); padding:8px 12px; border-radius:8px; cursor:pointer; }
     .btn:hover { border-color:var(--primary); color:var(--primary); }
     .btn-full { width:100%; } .btn-pill { border-radius:999px; }
     .btn-xs { padding:2px 6px; font-size:10px; }
     .section { display:grid; gap:8px; }
-    .list-item { border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; cursor:pointer; }
+    .list-item { border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; }
     .toolbar { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
-    .toolbar button { font-size:12px; }
+    .toolbar button { font-size:12px; background:#1e293b; color:var(--text); border:1px solid var(--border); border-radius:6px; }
     .editor { min-height:240px; border:1px solid var(--border); border-radius:8px; padding:10px; background:#0f1523; color:var(--text); }
     .mt-2 { margin-top:8px; } .mt-3 { margin-top:12px; }
   </style>
@@ -65,6 +65,7 @@
         case "note":return renderNote();
         default:return renderHome();
       }}
+
     // ===== Login Page (Google only) =====
     function renderLogin(){
       const card=el("div",{className:"card"});
@@ -113,8 +114,28 @@
         const snap=await wanlawTopics().orderBy("createdAt","desc").get();
         snap.forEach(d=>{
           const topic={id:d.id,...d.data()};
-          const item=el("div",{className:"list-item",text:topic.name});
-          item.addEventListener("click",()=>{APP_STATE.wanlaw.topicId=topic.id;setRoute("folders");});
+          const item=el("div",{className:"list-item"});
+          const row=el("div",{className:"card-header"});
+          row.appendChild(el("div",{className:"card-title",text:topic.name}));
+
+          const btnDelete=el("button",{className:"btn btn-xs",text:"Padam"});
+          btnDelete.style.color="#fecaca";
+          btnDelete.addEventListener("click",async(e)=>{
+            e.stopPropagation();
+            if(!confirm("Padam tajuk ini?")) return;
+            await wanlawTopics().doc(topic.id).delete();
+            loadTopics();
+          });
+
+          row.appendChild(btnDelete);
+          item.appendChild(row);
+
+          item.addEventListener("click",(e)=>{
+            if(e.target===btnDelete) return;
+            APP_STATE.wanlaw.topicId=topic.id;
+            setRoute("folders");
+          });
+
           list.appendChild(item);
         });
       }
@@ -156,8 +177,28 @@
         const snap=await wanlawFolders(tid).orderBy("createdAt","desc").get();
         snap.forEach(f=>{
           const folder={id:f.id,...f.data()};
-          const item=el("div",{className:"list-item",text:folder.name});
-          item.addEventListener("click",()=>{APP_STATE.wanlaw.folderId=folder.id;setRoute("note");});
+          const item=el("div",{className:"list-item"});
+          const row=el("div",{className:"card-header"});
+          row.appendChild(el("div",{className:"card-title",text:folder.name}));
+
+          const btnDelete=el("button",{className:"btn btn-xs",text:"Padam"});
+          btnDelete.style.color="#fecaca";
+          btnDelete.addEventListener("click",async(e)=>{
+            e.stopPropagation();
+            if(!confirm("Padam folder ini?")) return;
+            await wanlawFolders(tid).doc(folder.id).delete();
+            loadFolders();
+          });
+
+          row.appendChild(btnDelete);
+          item.appendChild(row);
+
+          item.addEventListener("click",(e)=>{
+            if(e.target===btnDelete) return;
+            APP_STATE.wanlaw.folderId=folder.id;
+            setRoute("note");
+          });
+
           list.appendChild(item);
         });
       }
@@ -195,18 +236,26 @@
       const btnUnderline = el("button",{className:"btn btn-xs",text:"Underline"});
       const btnHighlight = el("button",{className:"btn btn-xs",text:"Highlight"});
       const colorInput = el("input",{attrs:{type:"color"}});
-      const sizeSelect = el("select");
-      ["Normal","Kecil","Besar"].forEach((label,i)=>{
-        const opt = el("option",{text:label});
-        opt.value = i===0?"p":(i===1?"small":"h2");
-        sizeSelect.appendChild(opt);
-      });
+      
+      // Premium style size buttons (1pt–60pt)
+      const sizeContainer = el("div",{className:"toolbar"});
+      for(let i=1;i<=60;i+=5){ // step 5 for usability
+        const btnSize = el("button",{className:"btn btn-xs",text:`${i}pt`});
+        btnSize.addEventListener("click",()=>document.execCommand("fontSize",false,"7")); 
+        // execCommand fontSize uses 1–7 scale, so we map custom sizes with CSS later
+        btnSize.style.fontSize="12px";
+        btnSize.style.background="#1e293b";
+        btnSize.style.color=varText();
+        sizeContainer.appendChild(btnSize);
+      }
 
       toolbar.appendChild(btnBold);
       toolbar.appendChild(btnUnderline);
       toolbar.appendChild(btnHighlight);
       toolbar.appendChild(colorInput);
-      toolbar.appendChild(sizeSelect);
+
+      card.appendChild(toolbar);
+      card.appendChild(sizeContainer);
 
       // Editor
       const editor = el("div",{className:"editor",attrs:{contenteditable:"true"}});
@@ -217,14 +266,7 @@
       btnUnderline.addEventListener("click",()=>document.execCommand("underline"));
       btnHighlight.addEventListener("click",()=>document.execCommand("backColor",false,"#fde68a"));
       colorInput.addEventListener("input",(e)=>document.execCommand("foreColor",false,e.target.value));
-      sizeSelect.addEventListener("change",(e)=>{
-        const val=e.target.value;
-        if(val==="p") document.execCommand("formatBlock",false,"p");
-        else if(val==="small") document.execCommand("fontSize",false,"2");
-        else if(val==="h2") document.execCommand("formatBlock",false,"h2");
-      });
 
-      card.appendChild(toolbar);
       card.appendChild(editor);
 
       const hint = el("div",{className:"card-subtitle mt-2",text:"Perubahan disimpan automatik ke cloud (Firestore)."});
@@ -266,8 +308,6 @@
   </script>
 </body>
 </html>
-
-
 
 
 
