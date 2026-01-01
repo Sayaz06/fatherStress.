@@ -2,235 +2,178 @@
 <html lang="ms">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FatherStress</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Original Wan-Law</title>
+  <meta name="theme-color" content="#020617" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+
+  <!-- Premium theme styles -->
   <style>
-    body { margin:0; font-family:sans-serif; background:#0f172a; color:#f8fafc; }
-    .hidden { display:none }
-    .appbar { display:flex; align-items:center; gap:8px; background:#111827; padding:10px; color:#fff }
-    .container { padding:16px; max-width:960px; margin:auto }
-    button { padding:8px 12px; border-radius:6px; border:1px solid #333; background:#222; color:#fff; cursor:pointer }
-    .list { display:grid; gap:8px; margin-top:12px }
-    .row { display:flex; justify-content:space-between; align-items:center; background:#1f2937; padding:8px; border-radius:6px }
-    .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px }
-    .editor { min-height:200px; background:#0a1220; padding:10px; border-radius:6px }
+    :root{
+      --bg:#020617;         /* Slate/Navy gelap */
+      --text:#e5e7eb;       /* Gray-100 terang */
+      --muted:#9ca3af;      /* Subtext */
+      --border:#1f2937;     /* Cool Gray */
+      --border2:#4b5563;    /* Slate */
+      --grad1:#6366f1;      /* Indigo */
+      --grad2:#8b5cf6;      /* Violet */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, sans-serif;
+    }
+    a{color:inherit; text-decoration:none}
+    .container{max-width:900px; margin:0 auto; padding:20px}
+    .title{
+      font-weight:700; font-size:24px; margin:8px 0 16px;
+    }
+    .card{
+      background:#0b1220; border:1px solid var(--border);
+      border-radius:16px; padding:16px; box-shadow:0 10px 25px rgba(0,0,0,.35);
+    }
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:10px 14px; border-radius:12px; color:white; border:1px solid transparent;
+      background:linear-gradient(135deg, var(--grad1), var(--grad2));
+      box-shadow:0 8px 30px rgba(99,102,241,.35);
+      cursor:pointer; transition:.15s transform ease;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn-ghost{
+      background:transparent; border:1px solid var(--border2); color:var(--text)
+    }
+    .btn-danger{
+      background:#7c2d12; border-color:#7c2d12;
+    }
+    .input{
+      width:100%; padding:10px 12px; border-radius:12px;
+      background:#0b1220; border:1px solid var(--border2);
+      color:var(--text); outline:none;
+    }
+    .input::placeholder{color:var(--muted)}
+    .list{display:flex; flex-direction:column; gap:10px; margin-top:12px}
+    .item{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 12px; border-radius:12px; border:1px solid var(--border);
+      background:#0e1626;
+    }
+    .item-name{
+      display:flex; gap:10px; align-items:center; flex:1; min-width:0;
+    }
+    .item-name input{
+      flex:1; min-width:0;
+      background:transparent; border:none; color:var(--text); outline:none;
+    }
+    .toolbar{
+      display:flex; gap:8px; flex-wrap:wrap; padding:8px; border:1px solid var(--border);
+      border-radius:12px; margin:10px 0; background:#0e1626;
+    }
+    .toolbar .btn{padding:8px 10px}
+    .editor{
+      min-height:240px; padding:12px; border-radius:12px;
+      border:1px solid var(--border); background:#0b1220; outline:none;
+    }
+    .subtext{color:var(--muted); font-size:12px}
+    .header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;
+    }
+    .search{flex:1}
+    .hidden{display:none !important}
+    .divider{border-top:1px solid var(--border); margin:12px 0}
+    .back{cursor:pointer}
+    /* Font size chooser (1pt–60pt) */
+    .size-input{
+      width:90px; background:#0b1220; border:1px solid var(--border2);
+      border-radius:10px; color:var(--text); padding:8px;
+    }
   </style>
+
+  <!-- Firebase SDKs (Compat for simplicity) -->
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- App main script -->
+  <script defer src="app.js"></script>
 </head>
 <body>
-  <!-- Appbar -->
-  <div class="appbar">
-    <button id="backButton" class="hidden">Kembali</button>
-    <div>FatherStress</div>
-    <div style="flex:1"></div>
-    <div id="userEmail"></div>
-  </div>
-
   <div class="container">
-    <!-- Login Page -->
-    <section id="page-login">
-      <h2>Login</h2>
-      <button id="googleLoginBtn">Login dengan Google</button>
-    </section>
-
-    <!-- Home Page -->
-    <section id="page-home" class="hidden">
-      <h2>Senarai Tajuk</h2>
-      <button id="logoutBtn">Logout</button>
-      <div>
-        <input id="topicSearch" placeholder="Cari tajuk">
-        <button id="addTopicBtn">Tambah Tajuk Baharu</button>
+    <!-- View: Login -->
+    <section id="view-login" class="card">
+      <div class="title">Original Wan-Law</div>
+      <p class="subtext">Log masuk dengan akaun Gmail untuk menyimpan cerita & skrip anda secara selamat.</p>
+      <div class="divider"></div>
+      <div class="row">
+        <button id="btn-google" class="btn">Log masuk dengan Google</button>
       </div>
-      <div id="topicsList" class="list"></div>
     </section>
 
-    <!-- Folder Page -->
-    <section id="page-folders" class="hidden">
-      <h2 id="foldersTitle">Folder</h2>
-      <div>
-        <input id="folderSearch" placeholder="Cari folder">
-        <button id="addFolderBtn">Tambah Folder Baharu</button>
+    <!-- View: Home -->
+    <section id="view-home" class="card hidden">
+      <div class="header">
+        <div class="title">Original Wan-Law</div>
+        <div class="row">
+          <button id="btn-logout" class="btn-ghost">Logout</button>
+        </div>
       </div>
-      <div id="foldersList" class="list"></div>
+
+      <div class="row">
+        <input id="search-files" class="input search" placeholder="Cari Fail…" />
+        <button id="btn-add-file" class="btn">Tambah Fail</button>
+      </div>
+
+      <div id="files-list" class="list"></div>
     </section>
 
-    <!-- Note Page -->
-    <section id="page-notes" class="hidden">
-      <h2 id="notesTitle">Nota</h2>
+    <!-- View: Subfolder -->
+    <section id="view-folders" class="card hidden">
+      <div class="header">
+        <div class="row">
+          <span id="btn-back-home" class="btn-ghost back">← Kembali</span>
+        </div>
+        <div class="title">Original Wan-Law</div>
+      </div>
+
+      <p class="subtext" id="current-file-name"></p>
+
+      <div class="row">
+        <input id="search-folders" class="input search" placeholder="Cari Folder (longgar: 1–2 huruf/nombor)…" />
+        <button id="btn-add-folder" class="btn">Tambah subfolderFolder Baharu</button>
+      </div>
+
+      <div id="folders-list" class="list"></div>
+    </section>
+
+    <!-- View: Note -->
+    <section id="view-note" class="card hidden">
+      <div class="header">
+        <div class="row">
+          <span id="btn-back-folders" class="btn-ghost back">← Kembali</span>
+        </div>
+        <div class="title">Original Wan-Law</div>
+      </div>
+
+      <p class="subtext" id="current-folder-name"></p>
+
       <div class="toolbar">
-        <button data-cmd="bold">Bold</button>
-        <button data-cmd="underline">Underline</button>
-        <input id="colorInput" type="color" value="#ffffff">
-        <select id="fontSizeSelect"></select>
+        <button class="btn" data-action="bold">Bold</button>
+        <button class="btn" data-action="underline">Underline</button>
+        <input id="color-picker" type="color" title="Pilih warna perkataan" />
+        <input id="font-size" class="size-input" type="number" min="1" max="60" step="1" value="14" title="Saiz teks (1–60 pt)" />
       </div>
-      <div id="noteEditor" class="editor" contenteditable="true"></div>
-      <p id="saveStatus">Auto-save aktif.</p>
+
+      <div id="editor" class="editor" contenteditable="true" spellcheck="false" placeholder="Tulis nota anda di sini…"></div>
+      <p class="subtext" id="save-status">Auto-simpan diaktifkan.</p>
     </section>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-
+  <!-- Register Service Worker -->
   <script>
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const current = { user:null, topicId:null, folderId:null, noteDocId:'main' };
-
-    // Navigasi ringkas
-    function navigate(hash){
-      document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));
-      if(hash.startsWith('#home')) document.getElementById('page-home').classList.remove('hidden');
-      else if(hash.startsWith('#folders')) document.getElementById('page-folders').classList.remove('hidden');
-      else if(hash.startsWith('#notes')) document.getElementById('page-notes').classList.remove('hidden');
-      else document.getElementById('page-login').classList.remove('hidden');
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(() => {});
     }
-    window.addEventListener('hashchange',()=>navigate(location.hash));
-
-    // Auth state
-    auth.onAuthStateChanged(user=>{
-      current.user=user;
-      document.getElementById('userEmail').textContent=user?user.email:'';
-      if(user){ location.hash='#home'; navigate('#home'); renderTopics(); } 
-      else { location.hash='#login'; navigate('#login'); }
-    });
-
-    // Login/Logout
-    document.getElementById('googleLoginBtn').onclick=async()=>{
-      const provider=new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithPopup(provider);
-    };
-    document.getElementById('logoutBtn').onclick=()=>auth.signOut();
-
-    // Back button
-    document.getElementById('backButton').onclick=()=>{
-      if(location.hash.startsWith('#notes')) location.hash=`#folders/${current.topicId}`;
-      else if(location.hash.startsWith('#folders')) location.hash='#home';
-    };
-
-    // Util search
-    function matchesQuery(text,q){ return !q || text.toLowerCase().includes(q.toLowerCase()); }
-
-    // Topics CRUD
-    const topicsCol=()=>db.collection('users').doc(current.user.uid).collection('topics');
-    async function renderTopics(){
-      const snap=await topicsCol().get();
-      const list=document.getElementById('topicsList'); list.innerHTML='';
-      const q=document.getElementById('topicSearch').value;
-      snap.forEach(doc=>{
-        const d=doc.data();
-        if(matchesQuery(d.title||'',q)){
-          const row=document.createElement('div'); row.className='row';
-          row.innerHTML=`<div>${d.title}</div>
-            <div>
-              <button data-open="${doc.id}">Buka</button>
-              <button data-edit="${doc.id}">Sunting</button>
-              <button data-del="${doc.id}">Padam</button>
-            </div>`;
-          list.appendChild(row);
-        }
-      });
-      // Event listeners
-      list.querySelectorAll('[data-open]').forEach(btn=>btn.onclick=()=>{location.hash=`#folders/${btn.dataset.open}`;});
-      list.querySelectorAll('[data-edit]').forEach(btn=>btn.onclick=async()=>{
-        const id=btn.dataset.edit; const doc=await topicsCol().doc(id).get();
-        const title=prompt('Sunting tajuk:',doc.data().title||'');
-        if(title&&title.trim()!==''){ await topicsCol().doc(id).update({title,updatedAt:Date.now()}); renderTopics(); }
-      });
-      list.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{
-        if(confirm('Padam tajuk?')){ await topicsCol().doc(btn.dataset.del).delete(); renderTopics(); }
-      });
-    }
-    document.getElementById('addTopicBtn').onclick=async()=>{
-      const title=prompt('Masukkan tajuk baharu:');
-      if(title){ await topicsCol().add({title,createdAt:Date.now()}); renderTopics(); }
-    };
-    document.getElementById('topicSearch').oninput=renderTopics;
-  </script>
-
-    // Folders
-    const foldersCol=(tid)=>topicsCol().doc(tid).collection('folders');
-    async function renderFolders(tid){
-      current.topicId=tid;
-      const snap=await foldersCol(tid).get();
-      const list=document.getElementById('foldersList'); list.innerHTML='';
-      const q=document.getElementById('folderSearch').value;
-      snap.forEach(doc=>{
-        const d=doc.data();
-        if(matchesQuery(d.title||'',q)){
-          const row=document.createElement('div'); row.className='row';
-          row.innerHTML=`<div>${d.title}</div>
-            <div>
-              <button data-open="${doc.id}">Buka</button>
-              <button data-edit="${doc.id}">Sunting</button>
-              <button data-del="${doc.id}">Padam</button>
-            </div>`;
-          list.appendChild(row);
-        }
-      });
-      list.querySelectorAll('[data-open]').forEach(btn=>btn.onclick=()=>{location.hash=`#notes/${tid}/${btn.dataset.open}`;});
-      list.querySelectorAll('[data-edit]').forEach(btn=>btn.onclick=async()=>{
-        const id=btn.dataset.edit; const doc=await foldersCol(tid).doc(id).get();
-        const title=prompt('Sunting folder:',doc.data().title||'');
-        if(title&&title.trim()!==''){ await foldersCol(tid).doc(id).update({title,updatedAt:Date.now()}); renderFolders(tid); }
-      });
-      list.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{
-        if(confirm('Padam folder?')){ await foldersCol(tid).doc(btn.dataset.del).delete(); renderFolders(tid); }
-      });
-    }
-    document.getElementById('addFolderBtn').onclick=async()=>{
-      const title=prompt('Masukkan folder baharu:');
-      if(title){ await foldersCol(current.topicId).add({title,createdAt:Date.now()}); renderFolders(current.topicId); }
-    };
-    document.getElementById('folderSearch').oninput=()=>renderFolders(current.topicId);
-
-    // Notes
-    const noteDoc=(tid,fid,nid='main')=>foldersCol(tid).doc(fid).collection('notes').doc(nid);
-
-    // Populate font size options
-    (()=>{ const sel=document.getElementById('fontSizeSelect'); for(let i=1;i<=60;i++){ const opt=document.createElement('option'); opt.value=i; opt.textContent=i+'pt'; sel.appendChild(opt);} })();
-
-    // Toolbar actions
-    document.querySelectorAll('.toolbar [data-cmd]').forEach(btn=>{
-      btn.onclick=()=>{ document.execCommand(btn.dataset.cmd,false,null); noteChanged(); };
-    });
-    document.getElementById('colorInput').oninput=e=>{ document.execCommand('foreColor',false,e.target.value); noteChanged(); };
-    document.getElementById('fontSizeSelect').onchange=e=>{
-      const sizePt=e.target.value+'pt';
-      const sel=window.getSelection(); if(sel.rangeCount){ const range=sel.getRangeAt(0); const span=document.createElement('span'); span.style.fontSize=sizePt; range.surroundContents(span); }
-      noteChanged();
-    };
-
-    // Autosave
-    const editor=document.getElementById('noteEditor');
-    const saveStatus=document.getElementById('saveStatus');
-    let saveTimer=null;
-    function noteChanged(){ clearTimeout(saveTimer); saveStatus.textContent='Menyimpan...'; saveTimer=setTimeout(saveNote,800); }
-    editor.oninput=noteChanged;
-
-    async function openNote(tid,fid){
-      current.folderId=fid; current.noteDocId='main';
-      document.getElementById('notesTitle').textContent='Nota — '+fid;
-      editor.innerHTML=''; saveStatus.textContent='Auto-save aktif.';
-      const doc=await noteDoc(tid,fid,current.noteDocId).get();
-      if(doc.exists){ editor.innerHTML=doc.data().content||''; }
-      else { await noteDoc(tid,fid,current.noteDocId).set({content:'',createdAt:Date.now()}); }
-    }
-    async function saveNote(){
-      if(!current.user||!current.topicId||!current.folderId) return;
-      const html=editor.innerHTML;
-      try{ await noteDoc(current.topicId,current.folderId,current.noteDocId).set({content:html,updatedAt:Date.now()},{merge:true});
-        saveStatus.textContent='Disimpan automatik.'; }
-      catch(e){ saveStatus.textContent='Simpan gagal.'; console.error(e); }
-    }
-
-    // Service worker register
-    if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('service-worker.js'); }); }
   </script>
 </body>
 </html>
-
