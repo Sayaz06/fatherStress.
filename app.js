@@ -17,7 +17,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // Enable offline persistence untuk Firestore
-db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+// db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
 // Pastikan sesi login kekal selepas refresh
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
@@ -65,14 +65,25 @@ function show(id) {
   id.classList.remove('hidden');
 }
 
-// Login dengan Google
+// Login dengan Google (guna redirect)
 btnGoogle.addEventListener('click', async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   try {
-    await auth.signInWithPopup(provider);
+    await auth.signInWithRedirect(provider);
   } catch (e) {
     alert('Log masuk gagal: ' + e.message);
   }
+});
+
+// Tangkap result selepas redirect
+auth.getRedirectResult().then((result) => {
+  if (result.user) {
+    state.user = result.user;
+    show(vHome);
+    loadFiles();
+  }
+}).catch((error) => {
+  alert('Redirect login gagal: ' + error.message);
 });
 
 // Logout
@@ -363,4 +374,3 @@ btnBackFolders.addEventListener('click', () => {
   show(vFolders);
   if (state.noteUnsubscribe) { state.noteUnsubscribe(); state.noteUnsubscribe = null; }
 });
-
