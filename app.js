@@ -291,10 +291,7 @@ async function openFolder(folderId, folderTitle) {
     const data = doc.data();
     if (data && typeof data.content === 'string') {
       // Avoid cursor jump: only update if different
-      if (editor.innerHTML !== data.content) {
-        editor.innerHTML = data.content;
-      }
-    }
+      if (editor.innerHTML.trim() !== (data.content || '').trim()) { const sel = window.getSelection(); const pos = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).startOffset : null; editor.innerHTML = data.content || ''; if (pos !== null) { const range = document.createRange(); range.setStart(editor.firstChild || editor, Math.min(pos, (editor.firstChild?.length || 0))); range.collapse(true); sel.removeAllRanges(); sel.addRange(range); } }
   });
 
   show(vNote);
