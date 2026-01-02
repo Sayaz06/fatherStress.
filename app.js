@@ -341,7 +341,8 @@ fontSizeInput.addEventListener('change', () => {
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNote, 500);
+  // tunggu 3000ms (3 saat) selepas pengguna berhenti menaip
+  saveTimer = setTimeout(saveNote, 3000);
 }
 editor.addEventListener('input', scheduleSave);
 editor.addEventListener('keyup', scheduleSave);
