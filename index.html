@@ -161,10 +161,18 @@
   <button class="btn" data-action="bold">Bold</button>
   <button class="btn" data-action="underline">Underline</button>
   <input id="color-picker" type="color" title="Pilih warna perkataan" />
-  <button class="btn" data-action="size-12">12pt</button>
-  <button class="btn" data-action="size-18">18pt</button>
-  <button class="btn" data-action="size-24">24pt</button>
+  <select id="font-size-picker" class="size-input" title="Saiz teks">
+    <option value="12">12pt</option>
+    <option value="14" selected>14pt</option>
+    <option value="16">16pt</option>
+    <option value="18">18pt</option>
+    <option value="20">20pt</option>
+    <option value="24">24pt</option>
+    <option value="28">28pt</option>
+    <option value="32">32pt</option>
+  </select>
 </div>
+
 
 
       <div id="editor" class="editor" contenteditable="true" spellcheck="false" placeholder="Tulis nota anda di sini…"></div>
