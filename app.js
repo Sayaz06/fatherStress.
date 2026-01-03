@@ -345,14 +345,33 @@ colorPicker.addEventListener('input', () => {
   editor.focus();
 });
 
+let savedSelection = null;
+
+// Simpan selection bila user highlight dalam editor
+editor.addEventListener('mouseup', () => {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) savedSelection = sel.getRangeAt(0);
+});
+editor.addEventListener('keyup', () => {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) savedSelection = sel.getRangeAt(0);
+});
+
 fontSizeInput.addEventListener('change', () => {
   const sizePt = Math.max(1, Math.min(60, Number(fontSizeInput.value) || 14));
+
+  // Restore selection sebelum apply
+  if (savedSelection) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedSelection);
+  }
 
   // Apply font size pada selection
   document.execCommand('styleWithCSS', false, true);
   document.execCommand('fontSize', false, 7);
 
-  // Cari semua <font size="7"> dalam editor dan tukar ke inline style
+  // Tukar semua <font size="7"> dalam editor kepada inline style
   const els = editor.querySelectorAll('font[size="7"]');
   els.forEach(el => {
     el.removeAttribute('size');
@@ -361,6 +380,7 @@ fontSizeInput.addEventListener('change', () => {
 
   editor.focus();
 });
+
 
 
 // Auto-save (debounced)
