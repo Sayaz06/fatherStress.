@@ -347,12 +347,22 @@ colorPicker.addEventListener('input', () => {
 
 fontSizeInput.addEventListener('change', () => {
   const sizePt = Math.max(1, Math.min(60, Number(fontSizeInput.value) || 14));
-  document.execCommand('fontSize', false, 7); // apply largest, then replace with pt
-  const els = editor.querySelectorAll('font[size="7"]');
-  els.forEach(el => {
-    el.removeAttribute('size');
-    el.style.fontSize = `${sizePt}pt`;
-  });
+
+  // Apply font size pada selection sahaja
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand('fontSize', false, 7);
+
+  // Tukar hanya node dalam selection
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    const selectedNodes = range.cloneContents().querySelectorAll('font[size="7"]');
+    selectedNodes.forEach(node => {
+      node.removeAttribute('size');
+      node.style.fontSize = `${sizePt}pt`;
+    });
+  }
+
   editor.focus();
 });
 
@@ -361,7 +371,7 @@ let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
   // tunggu 6000ms (6 saat) selepas pengguna berhenti menaip
-  saveTimer = setTimeout(saveNote, 3000);
+  saveTimer = setTimeout(saveNote, 6000);
 }
 editor.addEventListener('input', scheduleSave);
 editor.addEventListener('keyup', scheduleSave);
