@@ -366,6 +366,45 @@ document.getElementById('btn-size-up').addEventListener('click', () => adjustFon
 document.getElementById('btn-size-down').addEventListener('click', () => adjustFontSize(-2));
 
 
+// Export hanya nota semasa ke JSON
+async function exportCurrentNote() {
+  if (!state.currentNoteId) return;
+  const doc = await notesCol(state.currentFileId, state.currentFolderId).doc(state.currentNoteId).get();
+  const noteData = { id: doc.id, ...doc.data() };
+  const json = JSON.stringify(noteData, null, 2);
+
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `note-${doc.id}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  saveStatus.textContent = "Nota berjaya diexport sebagai JSON.";
+}
+
+document.getElementById('btn-export-json').addEventListener('click', exportCurrentNote);
+
+// Import JSON untuk restore isi nota semasa
+async function importCurrentNote(file) {
+  const text = await file.text();
+  const data = JSON.parse(text);
+  if (!state.currentNoteId) return;
+
+  await notesCol(state.currentFileId, state.currentFolderId).doc(state.currentNoteId).set(data, { merge: true });
+  editor.innerHTML = data.content || '';
+  saveStatus.textContent = "Nota berjaya diimport dari JSON.";
+}
+
+document.getElementById('btn-import-json').addEventListener('click', () => {
+  document.getElementById('import-json-file').click();
+});
+
+document.getElementById('import-json-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (file) await importCurrentNote(file);
+});
 
 
 // Auto-save (debounced)
