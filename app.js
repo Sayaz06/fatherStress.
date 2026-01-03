@@ -348,23 +348,20 @@ colorPicker.addEventListener('input', () => {
 fontSizeInput.addEventListener('change', () => {
   const sizePt = Math.max(1, Math.min(60, Number(fontSizeInput.value) || 14));
 
-  // Apply font size pada selection sahaja
+  // Apply font size pada selection
   document.execCommand('styleWithCSS', false, true);
   document.execCommand('fontSize', false, 7);
 
-  // Tukar hanya node dalam selection
-  const sel = window.getSelection();
-  if (sel.rangeCount > 0) {
-    const range = sel.getRangeAt(0);
-    const selectedNodes = range.cloneContents().querySelectorAll('font[size="7"]');
-    selectedNodes.forEach(node => {
-      node.removeAttribute('size');
-      node.style.fontSize = `${sizePt}pt`;
-    });
-  }
+  // Cari semua <font size="7"> dalam editor dan tukar ke inline style
+  const els = editor.querySelectorAll('font[size="7"]');
+  els.forEach(el => {
+    el.removeAttribute('size');
+    el.style.fontSize = `${sizePt}pt`;
+  });
 
   editor.focus();
 });
+
 
 // Auto-save (debounced)
 let saveTimer = null;
